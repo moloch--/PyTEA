@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ##############################################################
-# Python Implementation of the Tiny Encryption Algorithm
+# Python implementation of the Tiny Encryption Algorithm
 # By Moloch
 # 
 #  Block size: 64bits
@@ -9,7 +9,7 @@
 
 from ctypes import c_uint32
 
-# Constants
+### Magical Constants
 DELTA = 0x9e3779b9
 SUMATION = 0xc6ef3720
 ROUNDS = 32
@@ -79,6 +79,10 @@ def encrypt(data, key, verbose=False):
     '''
     Encrypt string using TEA algorithm with a given key
     '''
+    assert isinstance(data, str)
+    assert isinstance(key, str)
+    data = to_c_array(data)
+    key = to_c_array(key)
     cipher_text = []
     for index in range(0, len(data), 2):
         block = data[index:index + 2]
@@ -89,6 +93,10 @@ def encrypt(data, key, verbose=False):
     return to_string(cipher_text)
 
 def decrypt(data, key, verbose=False):
+    assert isinstance(data, str)
+    assert isinstance(key, str)
+    data = to_c_array(data)
+    key = to_c_array(key)
     plain_text = []
     for index in range(0, len(data), 2):
         block = data[index:index + 2]
@@ -101,11 +109,11 @@ def decrypt(data, key, verbose=False):
 
 ### UI Code ###
 if __name__ == '__main__':
-    data = to_c_array("12341234")
-    key = to_c_array("asdfasdfasdfasdf")
+    data = "12341234"
+    key = "asdfasdfasdfasdf"
     print 'start:', data
     cipher_text = encrypt(data, key)
     print 'encrypted:', cipher_text
-    print 'decrypted:', decrypt(to_c_array(cipher_text), key)
+    print 'decrypted:', decrypt(cipher_text, key)
 
 
