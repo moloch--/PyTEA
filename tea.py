@@ -13,7 +13,8 @@ from ctypes import c_uint32
 DELTA = 0x9e3779b9
 SUMATION = 0xc6ef3720
 ROUNDS = 32
-BLOCK_SIZE = 4 # Bytes
+BLOCK_SIZE = 2  # number of 32-bit ints
+KEY_SIZE = 4 
 
 
 ### Functions ###
@@ -23,8 +24,8 @@ def encrypt_block(block, key, verbose=False):
     @param block: list of two c_uint32s
     @param key: list of four c_uint32s
     '''
-    assert len(block) == 2
-    assert len(key) == 4
+    assert len(block) == BLOCK_SIZE
+    assert len(key) == KEY_SIZE
     sumation = c_uint32(0)
     delta = c_uint32(DELTA)
     for index in range(0, ROUNDS):
@@ -40,8 +41,8 @@ def decrypt_block(block, key, verbose=False):
     @param block: list of two c_uint32s
     @param key: list of four c_uint32s
     '''
-    assert len(block) == 2
-    assert len(key) == 4
+    assert len(block) == BLOCK_SIZE
+    assert len(key) == KEY_SIZE
     sumation = c_uint32(SUMATION)
     delta = c_uint32(DELTA)
     for index in range(0, ROUNDS):
@@ -79,10 +80,8 @@ def encrypt(data, key, verbose=False):
     '''
     Encrypt string using TEA algorithm with a given key
     '''
-    assert isinstance(data, str)
-    assert isinstance(key, str)
-    data = to_c_array(data)
-    key = to_c_array(key)
+    data = to_c_array(data.encode('ascii', 'ignore'))
+    key = to_c_array(key.encode('ascii', 'ignore'))
     cipher_text = []
     for index in range(0, len(data), 2):
         block = data[index:index + 2]
@@ -93,10 +92,8 @@ def encrypt(data, key, verbose=False):
     return to_string(cipher_text)
 
 def decrypt(data, key, verbose=False):
-    assert isinstance(data, str)
-    assert isinstance(key, str)
-    data = to_c_array(data)
-    key = to_c_array(key)
+    data = to_c_array(data.encode('ascii', 'ignore'))
+    key = to_c_array(key.encode('ascii', 'ignore'))
     plain_text = []
     for index in range(0, len(data), 2):
         block = data[index:index + 2]
