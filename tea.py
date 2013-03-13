@@ -92,7 +92,7 @@ def encrypt(data, key, verbose=False):
     return to_string(cipher_text)
 
 def decrypt(data, key, verbose=False):
-    data = to_c_array(data.encode('ascii', 'ignore'))
+    data = to_c_array(data)
     key = to_c_array(key.encode('ascii', 'ignore'))
     plain_text = []
     for index in range(0, len(data), 2):
