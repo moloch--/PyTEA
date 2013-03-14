@@ -5,6 +5,11 @@ A Python implementation of the [Tiny Encryption Algorithm](https://en.wikipedia.
 
 TEA has a few weaknesses. Most notably, it suffers from equivalent keys—each key is equivalent to three others, which means that the effective key size is only 126 bits. As a result, TEA is especially bad as a cryptographic hash function. This weakness led to a method for hacking Microsoft's Xbox game console (where I first encountered it), where the cipher was used as a hash function. TEA is also susceptible to a related-key attack which requires 2^23 chosen plaintexts under a related-key pair, with 2^32 time complexity.
 
+TODO
+======
+* Does not pad input data (all input data must be mod 4 in length)
+* Does not currently implement CBC
+
 CLI Usage
 ==========
 ```
