@@ -1,12 +1,27 @@
 #!/usr/bin/env python
-##############################################################
-# Python implementation of the Tiny Encryption Algorithm
+#################################################################################
+# Python implementation of the Tiny Encryption Algorithm (TEA)
 # By Moloch
+#
+# About: TEA has a few weaknesses. Most notably, it suffers from 
+#        equivalent keys—each key is equivalent to three others, 
+#        which means that the effective key size is only 126 bits. 
+#        As a result, TEA is especially bad as a cryptographic hash 
+#        function. This weakness led to a method for hacking Microsoft's
+#        Xbox game console (where I first encountered it), where the 
+#        cipher was used as a hash function. TEA is also susceptible 
+#        to a related-key attack which requires 2^23 chosen plaintexts 
+#        under a related-key pair, with 2^32 time complexity.
 # 
-#  Block size: 64bits
-#    Key size: 128bits
-##############################################################
+#        Block size: 64bits
+#          Key size: 128bits
+#
+##################################################################################
 
+
+import getpass
+
+from hashlib import sha256
 from ctypes import c_uint32
 
 ### Magical Constants
@@ -69,9 +84,7 @@ def to_string(c_array):
         hex_string = hex(block.value)[2:-1]
         if len(hex_string) != 8: 
             hex_string = "0"+hex_string
-        #print 'hex block:', hex_string
         for index in range(0, len(hex_string), 2):
-            #print 'Char:', '0x%02s' % hex_string[index:index + 2]
             byte = int('0x%02s' % hex_string[index:index + 2], 16)
             output += chr(byte)
     return output
@@ -80,7 +93,7 @@ def encrypt(data, key, verbose=False):
     '''
     Encrypt string using TEA algorithm with a given key
     '''
-    data = to_c_array(data.encode('ascii', 'ignore'))
+    data = to_c_array(data)
     key = to_c_array(key.encode('ascii', 'ignore'))
     cipher_text = []
     for index in range(0, len(data), 2):
@@ -103,11 +116,38 @@ def decrypt(data, key, verbose=False):
         if verbose: print "[*] Encrypting block %d" % index
     return to_string(plain_text)
 
+def get_key():
+    ''' Generate a key based on user password '''
+    password = getpass.getpass("[?] Password: ")
+    sha = sha256()
+    sha.update(password + "Magic Static Salt")
+    sha.update(sha.hexdigest())
+    return ''.join([char for char in sha.hexdigest()[::4]])
+
+def encrypt_file(fpath, key, verbose=False):
+    key = get_key()
+    with open(fpath, 'r+') as fp:
+        data = fp.read()
+        cipher_text = encrypt(data)
+        fp.seek(0)
+        fp.write(cipher_text)
+    fp.close()
+
+def decrypt_file(fpath, key, verbose=False):
+    key = get_key()
+    with open(fpath, 'r+') as fp:
+        data = fp.read()
+        plain_text = decrypt(data)
+        fp.seek(0)
+        fp.write(plain_text)
+    fp.close()
 
 ### UI Code ###
 if __name__ == '__main__':
+    import argparse
     data = "12341234"
-    key = "asdfasdfasdfasdf"
+    key = get_key()
+    print 'key (%d): %s' % (len(key), key)
     print 'start:', data
     cipher_text = encrypt(data, key)
     print 'encrypted:', cipher_text
