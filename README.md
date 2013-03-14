@@ -7,7 +7,6 @@ TEA has a few weaknesses. Most notably, it suffers from equivalent keys—each k
 
 TODO
 ======
-* Does not pad input data (all input data must be mod 4 in length)
 * Does not currently implement CBC
 
 CLI Usage
