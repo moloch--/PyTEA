@@ -29,7 +29,7 @@ optional arguments:
 Library Usage
 ==============
 ```
-from tea import *
+import tea
 
 cipher_text = tea.encrypt('somedata', '128_bit_key_1234')
 plaint_text = tea.decrypt(cipher_text, '128_bit_key_1234')
