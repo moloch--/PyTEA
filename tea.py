@@ -4,7 +4,7 @@
 # By Moloch
 #
 # About: TEA has a few weaknesses. Most notably, it suffers from 
-#        equivalent keys—each key is equivalent to three others, 
+#        equivalent keys each key is equivalent to three others, 
 #        which means that the effective key size is only 126 bits. 
 #        As a result, TEA is especially bad as a cryptographic hash 
 #        function. This weakness led to a method for hacking Microsoft's
@@ -19,10 +19,19 @@
 ##################################################################################
 
 
+import os
 import getpass
+import platform
 
 from hashlib import sha256
 from ctypes import c_uint32
+
+if platform.system().lower() in ['linux', 'darwin']:
+    INFO = "\033[1m\033[36m[*]\033[0m "
+    WARN = "\033[1m\033[31m[!]\033[0m "
+else:
+    INFO = "[*] "
+    WARN = "[!] "
 
 ### Magical Constants
 DELTA = 0x9e3779b9
@@ -47,7 +56,7 @@ def encrypt_block(block, key, verbose=False):
         sumation.value += delta.value
         block[0].value += ((block[1].value << 4) + key[0].value) ^ (block[1].value + sumation.value) ^ ((block[1].value >> 5) + key[1].value)
         block[1].value += ((block[0].value << 4) + key[2].value) ^ (block[0].value + sumation.value) ^ ((block[0].value >> 5) + key[3].value)
-        if verbose: print "\t--> Encrypting block round %d of %d" % (index, ROUNDS)
+        if verbose: print("\t--> Encrypting block round %d of %d" % (index + 1, ROUNDS))
     return block
 
 def decrypt_block(block, key, verbose=False):
@@ -64,7 +73,7 @@ def decrypt_block(block, key, verbose=False):
         block[1].value -= ((block[0].value << 4) + key[2].value) ^ (block[0].value + sumation.value) ^ ((block[0].value >> 5) + key[3].value);
         block[0].value -= ((block[1].value << 4) + key[0].value) ^ (block[1].value + sumation.value) ^ ((block[1].value >> 5) + key[1].value);
         sumation.value -= delta.value
-        if verbose: print "\t<-- Decrypting block round %d of %d" % (index, ROUNDS)
+        if verbose: print("\t<-- Decrypting block round %d of %d" % (index + 1, ROUNDS))
     return block
 
 def to_c_array(data):
@@ -97,11 +106,14 @@ def encrypt(data, key, verbose=False):
     key = to_c_array(key.encode('ascii', 'ignore'))
     cipher_text = []
     for index in range(0, len(data), 2):
+        if verbose: 
+            print(INFO + "Encrypting block %d" % index)
         block = data[index:index + 2]
-        part1, part2 = encrypt_block(block, key)
-        cipher_text.append(part1)
-        cipher_text.append(part2)
-        if verbose: print "[*] Encrypting block %d" % index
+        block = encrypt_block(block, key, verbose)
+        for uint in block:
+            cipher_text.append(uint)
+    if verbose:
+        print(INFO + "Encryption completed successfully")
     return to_string(cipher_text)
 
 def decrypt(data, key, verbose=False):
@@ -109,48 +121,83 @@ def decrypt(data, key, verbose=False):
     key = to_c_array(key.encode('ascii', 'ignore'))
     plain_text = []
     for index in range(0, len(data), 2):
+        if verbose: 
+            print(INFO + "Encrypting block %d" % index)
         block = data[index:index + 2]
-        decrypted_block = decrypt_block(block, key)
+        decrypted_block = decrypt_block(block, key, verbose)
         for uint in decrypted_block:
             plain_text.append(uint)
-        if verbose: print "[*] Encrypting block %d" % index
+    if verbose:
+        print(INFO + "Decryption compelted successfully")
     return to_string(plain_text)
 
 def get_key():
     ''' Generate a key based on user password '''
-    password = getpass.getpass("[?] Password: ")
+    password = getpass.getpass(INFO + "Password: ")
     sha = sha256()
     sha.update(password + "Magic Static Salt")
     sha.update(sha.hexdigest())
     return ''.join([char for char in sha.hexdigest()[::4]])
 
 def encrypt_file(fpath, key, verbose=False):
-    key = get_key()
     with open(fpath, 'r+') as fp:
-        data = fp.read()
-        cipher_text = encrypt(data)
+        data = fp.read()[:-1]
+        cipher_text = encrypt(data, key, verbose)
         fp.seek(0)
         fp.write(cipher_text)
     fp.close()
 
 def decrypt_file(fpath, key, verbose=False):
-    key = get_key()
     with open(fpath, 'r+') as fp:
-        data = fp.read()
-        plain_text = decrypt(data)
+        data = fp.read()[:-1]
+        plain_text = decrypt(data, key, verbose)
         fp.seek(0)
         fp.write(plain_text)
     fp.close()
 
+def pad_data(data):
+    pad_delta = len(data) % BLOCK_SIZE
+    print 'padding:', pad_delta
+    return data
+
 ### UI Code ###
 if __name__ == '__main__':
-    import argparse
-    data = "12341234"
-    key = get_key()
-    print 'key (%d): %s' % (len(key), key)
-    print 'start:', data
-    cipher_text = encrypt(data, key)
-    print 'encrypted:', cipher_text
-    print 'decrypted:', decrypt(cipher_text, key)
+    from argparse import ArgumentParser
+    parser = ArgumentParser(
+        description='Python implementation of the TEA cipher',
+    )
+    parser.add_argument('--encrypt', '-e',
+        help='encrypt a file',
+        dest='epath',
+        default=None
+    )
+    parser.add_argument('--decrypt', '-d',
+        help='decrypt a file',
+        dest='dpath',
+        default=None
+    )
+    parser.add_argument('--verbose',
+        help='display verbose output',
+        default=False,
+        action='store_true',
+        dest='verbose'
+    )
+    args = parser.parse_args()
+    if args.epath is None and args.dpath is None:
+        print('Error: Must use --encrypt or --decrypt')
+    elif args.epath is not None:
+        print(INFO + 'Encrypt Mode')
+        if os.path.exists(args.epath) and os.path.isfile(args.epath):
+            key = get_key()
+            encrypt_file(args.epath, key, args.verbose)
+        else:
+            print(WARN + 'Error: target does not exist, or is not a file')
+    elif args.dpath is not None:
+        print(INFO + 'Decrypt Mode')
+        if os.path.exists(args.dpath) and os.path.isfile(args.dpath):
+            key = get_key()
+            decrypt_file(args.dpath, key, args.verbose)
+        else:
+            print(WARN + 'Error: target does not exist, or is not a file')
 
 
