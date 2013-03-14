@@ -131,9 +131,10 @@ def decrypt(data, key, verbose=False):
         print(INFO + "Decryption compelted successfully")
     return to_string(plain_text)
 
-def get_key():
+def get_key(password=''):
     ''' Generate a key based on user password '''
-    password = getpass.getpass(INFO + "Password: ")
+    if 0 == len(password):
+        password = getpass.getpass(INFO + "Password: ")
     sha = sha256()
     sha.update(password + "Magic Static Salt")
     sha.update(sha.hexdigest())
@@ -166,12 +167,12 @@ if __name__ == '__main__':
     parser = ArgumentParser(
         description='Python implementation of the TEA cipher',
     )
-    parser.add_argument('--encrypt', '-e',
+    parser.add_argument('-e', '--encrypt',
         help='encrypt a file',
         dest='epath',
         default=None
     )
-    parser.add_argument('--decrypt', '-d',
+    parser.add_argument('-d', '--decrypt',
         help='decrypt a file',
         dest='dpath',
         default=None

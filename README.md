@@ -31,8 +31,9 @@ Library Usage
 ```
 import tea
 
-cipher_text = tea.encrypt('somedata', '128_bit_key_1234')
-plaint_text = tea.decrypt(cipher_text, '128_bit_key_1234')
+key = get_key('Random Text or Something')
+cipher_text = tea.encrypt('somedata', key)
+plaint_text = tea.decrypt(cipher_text, key)
 ```
 
 
