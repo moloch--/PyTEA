@@ -187,14 +187,14 @@ if __name__ == '__main__':
     if args.epath is None and args.dpath is None:
         print('Error: Must use --encrypt or --decrypt')
     elif args.epath is not None:
-        print(INFO + 'Encrypt Mode')
+        print(WARN + 'Encrypt Mode: The file will be overwritten')
         if os.path.exists(args.epath) and os.path.isfile(args.epath):
             key = get_key()
             encrypt_file(args.epath, key, args.verbose)
         else:
             print(WARN + 'Error: target does not exist, or is not a file')
     elif args.dpath is not None:
-        print(INFO + 'Decrypt Mode')
+        print(WARN + 'Decrypt Mode: The file will be overwritten')
         if os.path.exists(args.dpath) and os.path.isfile(args.dpath):
             key = get_key()
             decrypt_file(args.dpath, key, args.verbose)
