@@ -23,8 +23,10 @@ import os
 import getpass
 import platform
 
+from random import choice
 from hashlib import sha256
 from ctypes import c_uint32
+from string import ascii_letters, digits
 
 if platform.system().lower() in ['linux', 'darwin']:
     INFO = "\033[1m\033[36m[*]\033[0m "
@@ -98,10 +100,32 @@ def to_string(c_array):
             output += chr(byte)
     return output
 
+def random_chars(nchars):
+    chars = ''
+    for n in range(0, nchars):
+        chars += choice(ascii_letters + digits)
+    return chars
+
+def add_padding(data, verbose=False):
+    pad_delta = 4 - (len(data) % 4)
+    if verbose:
+        print(INFO + "Padding delta: %d" % pad_delta)
+    data += random_chars(pad_delta)
+    data += "%s%d" % (random_chars(3), pad_delta)
+    return data
+
+def remove_padding(data, verbose=False):
+    pad_delta = int(data[-1])
+    data = data[:-4]
+    if verbose:
+        print(INFO + "Padding delta: %d" % pad_delta)
+    return data[:pad_delta * -1]
+
 def encrypt(data, key, verbose=False):
     '''
     Encrypt string using TEA algorithm with a given key
     '''
+    data = add_padding(data, verbose)
     data = to_c_array(data)
     key = to_c_array(key.encode('ascii', 'ignore'))
     cipher_text = []
@@ -127,9 +151,11 @@ def decrypt(data, key, verbose=False):
         decrypted_block = decrypt_block(block, key, verbose)
         for uint in decrypted_block:
             plain_text.append(uint)
+    data = to_string(plain_text)
+    data = remove_padding(data, verbose)
     if verbose:
         print(INFO + "Decryption compelted successfully")
-    return to_string(plain_text)
+    return data
 
 def get_key(password=''):
     ''' Generate a key based on user password '''
@@ -141,25 +167,22 @@ def get_key(password=''):
     return ''.join([char for char in sha.hexdigest()[::4]])
 
 def encrypt_file(fpath, key, verbose=False):
-    with open(fpath, 'r+') as fp:
-        data = fp.read()[:-1]
+    with open(fpath, 'rb+') as fp:
+        data = fp.read()
         cipher_text = encrypt(data, key, verbose)
         fp.seek(0)
         fp.write(cipher_text)
     fp.close()
 
 def decrypt_file(fpath, key, verbose=False):
-    with open(fpath, 'r+') as fp:
-        data = fp.read()[:-1]
+    with open(fpath, 'rb+') as fp:
+        data = fp.read()
         plain_text = decrypt(data, key, verbose)
-        fp.seek(0)
-        fp.write(plain_text)
+        fp.close()
+    fp = open(fpath, 'w')
+    fp.write(plain_text)
     fp.close()
 
-def pad_data(data):
-    pad_delta = len(data) % BLOCK_SIZE
-    print 'padding:', pad_delta
-    return data
 
 ### UI Code ###
 if __name__ == '__main__':
